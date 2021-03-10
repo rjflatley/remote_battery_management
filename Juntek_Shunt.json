@@ -1,0 +1,156 @@
+[
+    {
+        "id": "8aec7527.fcb3c8",
+        "type": "tab",
+        "label": "Juntek Shunt",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "4c2759f0.8c0838",
+        "type": "function",
+        "z": "8aec7527.fcb3c8",
+        "name": "Parse",
+        "func": "const BATT_AMP_HOURS = 260.0  //total amp-hours of battery bank\n\n//look for header before grabbing data\n//the third number is the frequency of the unit A=1, B=2, etc..\n//the forth number is the address\nvar header = [170, 28, 1, 17];  //Freq=A=1, Address = 17\nvar body = msg.payload;\nfor (i = 0; i < header.length; i++) {\n    if (header[i] != body[i]) {\n        return null;\n    }\n}\n\n// Voltage 4 * 256 + 5 as 16-bit unsigned\nvar voltage = body[4] << 8 | body[5];\nvoltage /= 100.0;\n\n// Current 6 * 256 + 7 as 16-bit signed\nvar current = body[6] << 8 | body[7];\nif (current & 0x8000) {\n    current = -((current ^ 0xFFFF) + 1);\n}\ncurrent /= 10.0;\n\n// Wattage 8..12 as 32-bit unsigned\nvar wattage = body[8] << 24 | \n              body[9] << 16 |\n              body[10] << 8 |\n              body[11];\nwattage /= 1000.0;\n\n// Amp Hours 12..16 as 32-bit unsigned\nvar amp_hrs = body[12] << 24 | \n              body[13] << 16 |\n              body[14] << 8 |\n              body[15];\namp_hrs /= 1000.0;\n\n// Watt Hours 16..20 as 32-bit unsigned\nvar watt_hrs = body[16] << 24 | \n               body[17] << 16 |\n               body[18] << 8 |\n               body[19];\nwatt_hrs /= 1000.0;\n\n// Seconds 20..24 as 32-bit unsigned\nvar time_s = body[20] << 24 | \n             body[21] << 16 |\n             body[22] << 8 |\n             body[23];\n\n// Status flag\nvar status_on = !(body[24]);\n\n// Temperature 25 as 8-bit signed\nvar temp = body[25];\nif (temp & 0x80) {\n    body = -((body ^ 0xFF) + 1);\n}\n\n// Batter state-of-charge\nvar batt_soc = (BATT_AMP_HOURS - amp_hrs) /\n               BATT_AMP_HOURS * 100.0;\n\nmsg.payload = { voltage: voltage,\n                current: current,\n                wattage: wattage,\n                amp_hrs: amp_hrs,\n                watt_hrs: watt_hrs,\n                time_s: time_s,\n                status_on: status_on,\n                temp: temp,\n                batt_soc: batt_soc };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 390,
+        "y": 580,
+        "wires": [
+            [
+                "33860e8b.8f2f62"
+            ]
+        ]
+    },
+    {
+        "id": "175f813d.e35d9f",
+        "type": "serial in",
+        "z": "8aec7527.fcb3c8",
+        "name": "",
+        "serial": "2bc72e22.bab102",
+        "x": 160,
+        "y": 580,
+        "wires": [
+            [
+                "4c2759f0.8c0838"
+            ]
+        ]
+    },
+    {
+        "id": "832f8f46.193bc",
+        "type": "debug",
+        "z": "8aec7527.fcb3c8",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1630,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "33860e8b.8f2f62",
+        "type": "trigger",
+        "z": "8aec7527.fcb3c8",
+        "name": "",
+        "op1": "",
+        "op2": "",
+        "op1type": "nul",
+        "op2type": "pay",
+        "duration": "1",
+        "extend": false,
+        "units": "min",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 610,
+        "y": 580,
+        "wires": [
+            [
+                "b7cd9aab.241818"
+            ]
+        ]
+    },
+    {
+        "id": "b7cd9aab.241818",
+        "type": "function",
+        "z": "8aec7527.fcb3c8",
+        "name": "HTTP Request builder",
+        "func": "data = msg.payload;\nfields = [\n    \"SOC BatteryVoltage=\" + data.voltage,\n    \"LoadCurrent=\" + data.current,\n    \"LoadPower=\" + data.wattage,\n    \"BatteryTemperature=\" + data.temp,\n    \"EquipmentStatus=\" + (data.status_on ? 1 : 0),\n    \"AmpHours=\" + data.amp_hrs,\n    \"WattHours=\" + data.watt_hrs,\n    \"OnTime=\" + data.time_s,\n    \"BatterySOC=\" + data.batt_soc\n    ];\nmsg.payload = fields.join();\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 880,
+        "y": 580,
+        "wires": [
+            [
+                "5d9b92dc.70ccac",
+                "1c9782e2.23f61d"
+            ]
+        ]
+    },
+    {
+        "id": "5d9b92dc.70ccac",
+        "type": "http request",
+        "z": "8aec7527.fcb3c8",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://localhost:8086/write?db=battsoc",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "basic",
+        "x": 1290,
+        "y": 580,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "1c9782e2.23f61d",
+        "type": "debug",
+        "z": "8aec7527.fcb3c8",
+        "name": "",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1340,
+        "y": 740,
+        "wires": []
+    },
+    {
+        "id": "2bc72e22.bab102",
+        "type": "serial-port",
+        "z": "",
+        "serialport": "/dev/ttyJuntek",
+        "serialbaud": "57600",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "0xaa",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "36",
+        "bin": "bin",
+        "out": "count",
+        "addchar": "",
+        "responsetimeout": "10000"
+    }
+]
