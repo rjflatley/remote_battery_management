@@ -11,7 +11,7 @@ https://www.raspberrypi.org/documentation/remote-access/ssh/
 
 Remote log into the Raspberry Pi using your favorite SSH utility (such as putty: https://www.putty.org/)
 
-sudo apt update  
+sudo apt update  E 
 sudo apt full-upgrade  
 curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -  
 echo "deb https://repos.influxdata.com/debian buster stable" | sudo tee /etc/apt/sources.list.d/influxdb.list  
@@ -25,6 +25,7 @@ influx
      CREATE DATABASE "tracera12"  
      CREATE DATABASE "heartrate"  
      CREATE DATABASE "bms"  
+     CREATE DATABASE "weatherstation"  
      exit  
 bash <(curl -sL https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)  
 node-red-start  
