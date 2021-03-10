@@ -56,5 +56,11 @@ Select import
 Cut and paste code from here:   
 https://raw.githubusercontent.com/rjflatley/remote_battery_management/main/Remote_battery_grafana.json  
 
+Additional Node-Red setups can be found here:  
+https://raw.githubusercontent.com/rjflatley/remote_battery_management/main/Sendyne_SFP101EVB.json  
+https://raw.githubusercontent.com/rjflatley/remote_battery_management/main/Juntek_Shunt.json  
+https://raw.githubusercontent.com/rjflatley/remote_battery_management/main/Airmar_Weatherstation.json  
+
+
 For EPEver Node-Red setup please visit:  
 https://github.com/AdamWelchUK/NodeRedEPEverDashboard  
